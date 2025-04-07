@@ -1,9 +1,19 @@
 var data = {};
 
-function include(path, _data = {}) {
-    let script = document.currentScript;
+class XInclude extends HTMLElement {
+    constructor() {
+      super();
+    }
+}
 
-    data = _data;
+customElements?.define("x-include", XInclude);
+
+function text(content) {
+    document.currentScript.outerHTML = content;
+}
+
+function include(element, path) {
+    data = element.dataset;
     fetch(path)
         .then(response => response.text())
         .then(content => {
@@ -13,7 +23,7 @@ function include(path, _data = {}) {
             template.innerHTML = content;
             let html = template.content.cloneNode(true);
 
-            html.querySelectorAll("script, tjs").forEach(oldScript => {
+            html.querySelectorAll("script").forEach(oldScript => {
                 const newScript = document.createElement("script");
                 if (oldScript.src) {
                     newScript.src = oldScript.src;
@@ -23,11 +33,17 @@ function include(path, _data = {}) {
                 oldScript.replaceWith(newScript);
             });
 
-            script.replaceWith(html);
+            element.replaceWith(html);
         })
         .catch(error => console.error(error));
 }
 
-function text(content) {
-    document.currentScript.outerHTML = content;
-}
+document.addEventListener("DOMContentLoaded", () => {
+    const elements = document.getElementsByTagName("x-include");
+    for (let element of elements) {
+        const src = element.getAttribute("src");
+        if (src) {
+            include(element, src);
+        }
+    }
+});
